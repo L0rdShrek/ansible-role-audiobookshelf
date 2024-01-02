@@ -37,8 +37,6 @@ audiobookshelf_metadata_base_path: "{{ audiobookshelf_base_path }}/metadata"
 audiobookshelf_config_base_path: "{{ audiobookshelf_base_path }}/config"
 
 
-
-
 audiobookshelf_container_image: "{{ audiobookshelf_container_image_registry_prefix }}advplyr/audiobookshelf:{{ audiobookshelf_container_image_tag }}"
 audiobookshelf_container_image_registry_prefix: ghcr.io/
 audiobookshelf_container_image_tag: "{{ audiobookshelf_version }}"
