@@ -13,6 +13,9 @@ audiobookshelf_env_path: "{{ audiobookshelf_base_path }}/env"
 
 audiobookshelf_hostname: ''
 audiobookshelf_port: ''
+# The path at which healthchecks is served.
+# This value must either be `/` or not end with a slash (e.g. `/healthchecks`).
+audiobookshelf_path_prefix: /
 
 audiobookshelf_uid: ''
 audiobookshelf_gid: ''
@@ -22,11 +25,9 @@ audiobookshelf_podcasts_docker_path: "./podcasts"
 audiobookshelf_metadata_docker_path: "./metadata"
 audiobookshelf_config_docker_path: "./config"
 
-
 audiobookshelf_ffmpeg_path: "ffmpeg"
 audiobookshelf_ffprobe_path: "ffprobe"
 audiobookshelf_tone_path: "tone"
-
 
 
 audiobookshelf_base_path: "/{{ audiobookshelf_identifier }}"
@@ -36,11 +37,7 @@ audiobookshelf_metadata_base_path: "{{ audiobookshelf_base_path }}/metadata"
 audiobookshelf_config_base_path: "{{ audiobookshelf_base_path }}/config"
 
 
-# The path at which healthchecks is served.
-# This value must either be `/` or not end with a slash (e.g. `/healthchecks`).
-audiobookshelf_path_prefix: /
 
-audiobookshelf_base_path: "/{{ audiobookshelf_identifier }}"
 
 audiobookshelf_container_image: "{{ audiobookshelf_container_image_registry_prefix }}advplyr/audiobookshelf:{{ audiobookshelf_container_image_tag }}"
 audiobookshelf_container_image_registry_prefix: ghcr.io/
