@@ -1,8 +1,11 @@
 # .github/workflows/ansible-lint.yml
 name: ansible-lint
 on:
-  push: # pull_request
+  pull_request:
     branches: ["main", "stable", "release/v*"]
+  push:
+    branches-ignore: ['dependabot/**'] # Don't run dependabot branches, as they are already covered by pull requests
+    
 jobs:
   build:
     name: Ansible Lint # Naming the build is important to use it as a status check
