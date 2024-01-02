@@ -1,0 +1,19 @@
+---
+
+- name: Check existence of audiobookshelf systemd service
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  register: audiobookshelf_service_stat
+
+- when: audiobookshelf_service_stat.stat.exists | bool
+  block:
+    - name: Ensure audiobookshelf service is stopped
+      ansible.builtin.service:
+        name: "{{ item.service }}"
+        state: stopped
+        daemon_reload: true
+    - name: Ensure audiobookshelf service doesn't exist
+      ansible.builtin.file:
+        dest: "{{ item.path }}"
+        state: absent
+ 

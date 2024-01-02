@@ -1,0 +1,184 @@
+---
+
+# Project source code URL: https://github.com/advplyr/audiobookshelf
+
+audiobookshelf_enabled: true
+audiobookshelf_identifier: audiobookshelf
+
+audiobookshelf_version: "2.7.1"
+
+audiobookshelf_token_secret: ''
+
+audiobookshelf_env_path: "{{ audiobookshelf_base_path }}/env"
+
+audiobookshelf_hostname: ''
+audiobookshelf_port: ''
+
+audiobookshelf_uid: ''
+audiobookshelf_gid: ''
+
+audiobookshelf_audiobooks_docker_path: "./audiobooks"
+audiobookshelf_podcasts_docker_path: "./podcasts"
+audiobookshelf_metadata_docker_path: "./metadata"
+audiobookshelf_config_docker_path: "./config"
+
+
+audiobookshelf_ffmpeg_path: "ffmpeg"
+audiobookshelf_ffprobe_path: "ffprobe"
+audiobookshelf_tone_path: "tone"
+
+
+
+audiobookshelf_base_path: "/{{ audiobookshelf_identifier }}"
+audiobookshelf_audiobooks_base_path: "{{ audiobookshelf_base_path }}/audiobooks"
+audiobookshelf_podcasts_base_path: "{{ faudiobookshelf_base_path }}/podcasts"
+audiobookshelf_metadata_base_path: "{{ audiobookshelf_base_path }}/metadata"
+audiobookshelf_config_base_path: "{{ audiobookshelf_base_path }}/config"
+
+
+# The path at which healthchecks is served.
+# This value must either be `/` or not end with a slash (e.g. `/healthchecks`).
+audiobookshelf_path_prefix: /
+
+audiobookshelf_base_path: "/{{ audiobookshelf_identifier }}"
+
+audiobookshelf_container_image: "{{ audiobookshelf_container_image_registry_prefix }}advplyr/audiobookshelf:{{ audiobookshelf_container_image_tag }}"
+audiobookshelf_container_image_registry_prefix: ghcr.io/
+audiobookshelf_container_image_tag: "{{ audiobookshelf_version }}"
+audiobookshelf_container_image_force_pull: "{{ audiobookshelf_container_image.endswith(':latest') }}"
+
+# The base container network. It will be auto-created by this role if it doesn't exist already.
+audiobookshelf_container_network: "{{ audiobookshelf_identifier }}"
+
+# A list of additional container networks that the container would be connected to.
+# The role does not create these networks, so make sure they already exist.
+# Use this to expose this container to another reverse proxy, which runs in a different container network.
+audiobookshelf_container_additional_networks: "{{ audiobookshelf_container_additional_networks_auto + audiobookshelf_container_additional_networks_custom }}"
+audiobookshelf_container_additional_networks_auto: []
+audiobookshelf_container_additional_networks_custom: []
+
+# Specifies how the container publishes its HTTP port
+#
+# Takes an "<ip>:<port>" value (e.g. "127.0.0.1:8000"), just a port number or an empty string to not expose.
+audiobookshelf_container_http_bind_port: ''
+
+# audiobookshelf_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
+# See `../templates/labels.j2` for details.
+#
+# To inject your own other container labels, see `audiobookshelf_container_labels_additional_labels`.
+audiobookshelf_container_labels_traefik_enabled: true
+audiobookshelf_container_labels_traefik_docker_network: "{{ audiobookshelf_container_network }}"
+audiobookshelf_container_labels_traefik_hostname: "{{ audiobookshelf_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/healthchecks`).
+audiobookshelf_container_labels_traefik_path_prefix: "{{ audiobookshelf_path_prefix }}"
+audiobookshelf_container_labels_traefik_rule: "Host(`{{ audiobookshelf_container_labels_traefik_hostname }}`){% if audiobookshelf_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ audiobookshelf_container_labels_traefik_path_prefix }}`){% endif %}"
+audiobookshelf_container_labels_traefik_priority: 0
+audiobookshelf_container_labels_traefik_entrypoints: web-secure
+audiobookshelf_container_labels_traefik_tls: "{{ audiobookshelf_container_labels_traefik_entrypoints != 'web' }}"
+audiobookshelf_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+
+# Controls which additional headers to attach to all HTTP requests.
+# To add your own custom request headers, use `audiobookshelf_container_labels_traefik_additional_response_headers_custom`
+audiobookshelf_container_labels_traefik_additional_request_headers: "{{ audiobookshelf_container_labels_traefik_additional_request_headers_auto | combine(audiobookshelf_container_labels_traefik_additional_request_headers_custom) }}"
+audiobookshelf_container_labels_traefik_additional_request_headers_auto: {}
+audiobookshelf_container_labels_traefik_additional_request_headers_custom: {}
+
+# Controls which additional headers to attach to all HTTP responses.
+# To add your own custom response headers, use `audiobookshelf_container_labels_traefik_additional_response_headers_custom`
+audiobookshelf_container_labels_traefik_additional_response_headers: "{{ audiobookshelf_container_labels_traefik_additional_response_headers_auto | combine(audiobookshelf_container_labels_traefik_additional_response_headers_custom) }}"
+audiobookshelf_container_labels_traefik_additional_response_headers_auto: |
+  {{
+    {}
+    | combine ({'X-XSS-Protection': audiobookshelf_http_header_xss_protection} if audiobookshelf_http_header_xss_protection else {})
+    | combine ({'X-Frame-Options': audiobookshelf_http_header_frame_options} if audiobookshelf_http_header_frame_options else {})
+    | combine ({'X-Content-Type-Options': audiobookshelf_http_header_content_type_options} if audiobookshelf_http_header_content_type_options else {})
+    | combine ({'Content-Security-Policy': audiobookshelf_http_header_content_security_policy} if audiobookshelf_http_header_content_security_policy else {})
+    | combine ({'Permission-Policy': audiobookshelf_http_header_content_permission_policy} if audiobookshelf_http_header_content_permission_policy else {})
+    | combine ({'Strict-Transport-Security': audiobookshelf_http_header_strict_transport_security} if audiobookshelf_http_header_strict_transport_security and audiobookshelf_container_labels_traefik_tls else {})
+  }}
+audiobookshelf_container_labels_traefik_additional_response_headers_custom: {}
+
+# audiobookshelf_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
+# See `../templates/labels.j2` for details.
+#
+# Example:
+# audiobookshelf_container_labels_additional_labels: |
+#   my.label=1
+#   another.label="here"
+audiobookshelf_container_labels_additional_labels: ''
+
+# A list of additional "volumes" to mount in the container.
+#
+# See the `--mount` documentation for the `docker run` command.
+#
+# Example:
+# audiobookshelf_container_additional_volumes:
+#   - type: bind
+#     src: /path/on/the/host
+#     dst: /data
+#   - type: bind
+#     src: /another-path/on/the/host
+#     dst: /read-only
+#     options: readonly
+audiobookshelf_container_additional_volumes: []
+
+# A list of extra arguments to pass to the container
+audiobookshelf_container_extra_arguments: []
+
+
+# Specifies the value of the `X-XSS-Protection` header
+# Stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
+#
+# Learn more about it is here:
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+# - https://portswigger.net/web-security/cross-site-scripting/reflected
+audiobookshelf_http_header_xss_protection: "1; mode=block"
+
+# Specifies the value of the `X-Frame-Options` header which controls whether framing can happen.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+audiobookshelf_http_header_frame_options: SAMEORIGIN
+
+# Specifies the value of the `X-Content-Type-Options` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+audiobookshelf_http_header_content_type_options: nosniff
+
+# Specifies the value of the `Content-Security-Policy` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+audiobookshelf_http_header_content_security_policy: frame-ancestors 'self'
+
+# Specifies the value of the `Permission-Policy` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permission-Policy
+audiobookshelf_http_header_content_permission_policy: "{{ 'interest-cohort=()' if audiobookshelf_floc_optout_enabled else '' }}"
+
+# Specifies the value of the `Strict-Transport-Security` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+audiobookshelf_http_header_strict_transport_security: "max-age=31536000; includeSubDomains{{ '; preload' if audiobookshelf_hsts_preload_enabled else '' }}"
+
+# Controls whether to send a "Permissions-Policy interest-cohort=();" header along with all responses
+#
+# Learn more about what it is here:
+# - https://www.eff.org/deeplinks/2021/03/googles-floc-terrible-idea
+# - https://paramdeo.com/blog/opting-your-website-out-of-googles-floc-network
+# - https://amifloced.org/
+#
+# Of course, a better solution is to just stop using browsers (like Chrome), which participate in such tracking practices.
+# See: `audiobookshelf_content_permission_policy`
+audiobookshelf_floc_optout_enabled: true
+
+# Controls if HSTS preloading is enabled
+#
+# In its strongest and recommended form, the [HSTS policy](https://www.chromium.org/hsts) includes all subdomains, and
+# indicates a willingness to be "preloaded" into browsers:
+# `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+# For more information visit:
+# - https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+# - https://hstspreload.org/#opt-in
+# See: `audiobookshelf_http_header_strict_transport_security`
+audiobookshelf_hsts_preload_enabled: false
+
+# List of systemd services that healthchecks.service depends on
+audiobookshelf_systemd_required_services_list: "{{ audiobookshelf_systemd_required_systemd_services_list_default + audiobookshelf_systemd_required_systemd_services_list_auto + audiobookshelf_systemd_required_systemd_services_list_custom }}"
+audiobookshelf_systemd_required_systemd_services_list_default: ['docker.service']
+audiobookshelf_systemd_required_systemd_services_list_auto: []
+audiobookshelf_systemd_required_systemd_services_list_custom: []

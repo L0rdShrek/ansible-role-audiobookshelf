@@ -1,0 +1,43 @@
+---
+
+- name: Ensure Audiobookshelf network is created in Docker
+  community.docker.docker_network:
+    name: "{{ audiobookshelf_container_network }}"
+    driver: bridge
+
+
+- name: Ensure Audiobookshelf paths exists
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: 0700
+    owner: "{{ funkwhale_uid }}"
+    group: "{{ funkwhale_gid }}"
+  with_items:
+    - {path: "{{ audiobookshelf_base_path }}", when: true}
+    - {path: "{{ audiobookshelf_audiobooks_base_path }}", when: true}
+    - {path: "{{ audiobookshelf_podcasts_base_path }}", when: true}
+    - {path: "{{ audiobookshelf_metadata_beat_base_path }}", when: true}
+    - {path: "{{ audiobookshelf_config_beat_base_path }}", when: true}
+
+
+- name: Ensure Audiobookshelf container image is pulled
+  community.docker.docker_image:
+    name: "{{ audiobookshelf_container_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ audiobookshelf_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else audiobookshelf_container_image_force_pull }}"
+  register: result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: result is not failed
+
+- name: Ensure Audiobookshelf container network is created
+  community.general.docker_network:
+    name: "{{ audiobookshelf_container_network }}"
+    driver: bridge
+
+- name: Ensure Audiobookshelf systemd service is present
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/systemd/healthchecks.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ audiobookshelf_identifier }}.service"

@@ -1,0 +1,25 @@
+---
+
+- name: Check existence of Healthchecks systemd service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ audiobookshelf_identifier }}.service"
+  register: audiobookshelf_service_stat
+
+- when: audiobookshelf_service_stat.stat.exists | bool
+  block:
+    - name: Ensure Healthchecks systemd service is stopped
+      ansible.builtin.service:
+        name: "{{ audiobookshelf_identifier }}"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+
+    - name: Ensure Healthchecks systemd service does not exist
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ audiobookshelf_identifier }}.service"
+        state: absent
+
+    - name: Ensure Healthchecks path doesn't exist
+      ansible.builtin.file:
+        path: "{{ audiobookshelf_base_path }}"
+        state: absent

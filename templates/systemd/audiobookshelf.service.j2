@@ -1,0 +1,56 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+Description=Healthchecks ({{ audiobookshelf_identifier }})
+{% for service in audiobookshelf_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --time={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ audiobookshelf_identifier }} 2>/dev/null || true'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ audiobookshelf_identifier }} 2>/dev/null || true'
+
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
+			--rm \
+			--name={{ audiobookshelf_identifier }} \
+			--log-driver=none \
+			--user={{ audiobookshelf_uid }}:{{ audiobookshelf_gid }} \
+			--cap-drop=ALL \
+			--read-only \
+			--network={{ audiobookshelf_container_network }} \
+			{% if audiobookshelf_container_http_bind_port %}
+			-p {{ audiobookshelf_container_http_bind_port }}:8000 \
+			{% endif %}
+			--label-file={{ audiobookshelf_base_path }}/labels \
+            --mount type=bind,src={{ audiobookshelf_audiobooks_base_path }},dst={{ audiobookshelf_audiobooks_docker_path }} \
+            --mount type=bind,src={{ audiobookshelf_podcasts_base_path }},dst={{ audiobookshelf_podcasts_docker_path }} \
+            --mount type=bind,src={{ audiobookshelf_metadata_base_path }},dst={{ audiobookshelf_metadata_docker_path }} \
+            --mount type=bind,src={{ audiobookshelf_config_base_path }},dst={{ audiobookshelf_config_docker_path }} \
+			{% for volume in audiobookshelf_container_additional_volumes %}
+			--mount type={{ volume.type | default('bind' if '/' in volume.src else 'volume') }},src={{ volume.src }},dst={{ volume.dst }}{{ (',' + volume.options) if volume.options | default('') else '' }} \
+			{% endfor %}
+            --env-file={{ audiobookshelf_env_path }} \
+
+			{% for arg in audiobookshelf_container_extra_arguments %}
+			{{ arg }} \
+			{% endfor %}
+			{{ audiobookshelf_container_image }}
+
+{% for network in audiobookshelf_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ audiobookshelf_identifier }}
+{% endfor %}
+
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ audiobookshelf_identifier }}
+
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --time={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ audiobookshelf_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ audiobookshelf_identifier }} 2>/dev/null || true'
+
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ audiobookshelf_identifier }}
+
+[Install]
+WantedBy=multi-user.target
